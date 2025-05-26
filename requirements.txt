@@ -5,8 +5,9 @@ webrtcvad-wheels==2.0.14
 halo==0.0.31
 torch
 torchaudio
-scipy==1.15.2
+scipy==1.9.3
 openwakeword>=0.4.0
 websockets==15.0.1
 websocket-client==1.8.0
 soundfile==0.13.1
+tqdm>=4.66.0,<4.67.0
