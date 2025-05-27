@@ -45,7 +45,7 @@ if [ -z "$choice" ]; then
 fi
 
 # Activate virtual environment
-cd /home/bloodrune/nscix/voice
+cd /home/bloodrune/RTTS/RealtimeSTT
 source venv/bin/activate
 
 echo ""
