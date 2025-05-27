@@ -579,6 +579,58 @@ Suggested starting parameters for OpenWakeWord usage:
         ) as recorder:
 ```
 
+## WebSocket Server Mode
+
+This fork includes a WebSocket-based client-server architecture for remote audio streaming, ideal for scenarios where the microphone and processing server are on different machines.
+
+### Server Quick Start
+
+```bash
+./start_server.sh
+```
+
+Choose from 4 server modes:
+1. **High Accuracy (No Real-time)** - Best quality, final sentences only (medium.en)
+2. **Balanced Real-time** - Good accuracy with live feedback (medium.en + tiny.en)
+3. **Fast Real-time** - Maximum responsiveness (tiny.en throughout)
+4. **Recording Mode** - Saves audio files and transcriptions
+
+### Client Connection
+
+Windows/remote clients connect via:
+```bash
+python client.py <server-ip>
+```
+
+### Server Configuration
+
+- **Port**: 9999 (WebSocket)
+- **Audio Format**: 16kHz, mono, 16-bit PCM
+- **GPU Support**: RTX 3080 or compatible NVIDIA GPU recommended
+- **CPU Alternative**: Works well on 24+ core systems
+
+### Installation Guide
+
+For detailed server setup instructions, see [docs/SETUP_NEW_VM.md](docs/SETUP_NEW_VM.md).
+
+Key requirements:
+- Alma Linux 9 or compatible RHEL-based system
+- Python 3.11+
+- 80GB+ RAM for large models
+- NVIDIA GPU (optional but recommended)
+
+### Performance Notes
+
+**CPU Performance:**
+- 24 cores handle medium.en model well
+- 10-20 second model loading time
+- 2-4GB memory usage per model
+
+**GPU Performance:**
+- RTX 3080 provides significant acceleration
+- Automatic CUDA detection when drivers installed
+- Supports PyTorch 2.7.0 with CUDA 12.6
+
 ## FAQ
 
 ### Q: I encountered the following error: "Unable to load any of {libcudnn_ops.so.9.1.0, libcudnn_ops.so.9.1, libcudnn_ops.so.9, libcudnn_ops.so} Invalid handle. Cannot load symbol cudnnCreateTensorDescriptor." How do I fix this?
@@ -589,6 +641,26 @@ Suggested starting parameters for OpenWakeWord usage:
    pip install ctranslate2==4.4.0
    ```
 2. **Upgrade cuDNN** on your system to version 9.2 or above.
+
+### Q: I get "Could not load library libcudnn_ops_infer.so.8" error on RHEL/Alma Linux. How do I fix this?
+
+**A:** This indicates cuDNN 8 is not installed. For RHEL-based systems:
+
+1. **Add NVIDIA CUDA repository**:
+   ```bash
+   wget https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo
+   sudo mv cuda-rhel9.repo /etc/yum.repos.d/
+   ```
+
+2. **Install cuDNN 8**:
+   ```bash
+   sudo dnf install libcudnn8
+   ```
+
+3. **Ensure ctranslate2 compatibility**:
+   ```bash
+   pip install ctranslate2==4.4.0
+   ```
 
 ## Contribution
 

@@ -96,6 +96,7 @@ if __name__ == '__main__':
         'use_microphone': False,  # We'll feed audio from WebSocket
         'model': 'medium.en',  # High accuracy model (769M parameters)
         'language': 'en',
+        'device': 'cuda',  # Use GPU acceleration
         'silero_sensitivity': 0.4,
         'webrtc_sensitivity': 2,
         'post_speech_silence_duration': 0.4,
