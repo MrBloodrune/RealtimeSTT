@@ -114,9 +114,13 @@ class AudioCaptureService : Service() {
                                 bitsPerSample = 16
                             )
                             
-                            // Notify listener
-                            withContext(Dispatchers.Main) {
-                                audioListener?.invoke(audioChunk)
+                            // Notify listener safely
+                            try {
+                                withContext(Dispatchers.Main) {
+                                    audioListener?.invoke(audioChunk)
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error notifying listener", e)
                             }
                             
                             // Add to queue (drop old chunks if full)

@@ -8,7 +8,9 @@ import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.IBinder
+import android.util.Log
 import android.view.MotionEvent
+import android.widget.ScrollView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -54,8 +56,15 @@ class MainActivity : AppCompatActivity() {
             
             // Set up audio listener
             audioService?.setAudioListener { audioChunk ->
-                if (viewModel.isRecording.value) {
-                    viewModel.sendAudioData(audioChunk.data)
+                try {
+                    if (viewModel.isRecording.value) {
+                        viewModel.sendAudioData(audioChunk.data)
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Error sending audio data", e)
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
             
@@ -280,6 +289,12 @@ class MainActivity : AppCompatActivity() {
                 ContextCompat.getColor(this, android.R.color.black)
             }
         )
+        
+        // Auto-scroll to bottom when new text is added
+        binding.transcriptionText.post {
+            val scrollView = binding.transcriptionText.parent as? ScrollView
+            scrollView?.fullScroll(ScrollView.FOCUS_DOWN)
+        }
     }
     
     private fun checkPermissionAndStartService() {
@@ -303,16 +318,37 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun startRecording() {
-        if (!serviceBound || audioService == null) return
+        if (!serviceBound || audioService == null) {
+            Log.w("MainActivity", "Cannot start recording - service not bound")
+            Toast.makeText(this, "Audio service not ready", Toast.LENGTH_SHORT).show()
+            return
+        }
         
-        viewModel.startRecording()
-        audioService?.startRecording()
+        if (viewModel.connectionState.value != ConnectionState.CONNECTED) {
+            Toast.makeText(this, "Not connected to server", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        try {
+            viewModel.startRecording()
+            audioService?.startRecording()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error starting recording", e)
+            Toast.makeText(this, "Failed to start recording: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
     
     private fun stopRecording() {
-        if (!serviceBound || audioService == null) return
+        if (!serviceBound || audioService == null) {
+            Log.w("MainActivity", "Cannot stop recording - service not bound")
+            return
+        }
         
-        viewModel.stopRecording()
-        audioService?.stopRecording()
+        try {
+            viewModel.stopRecording()
+            audioService?.stopRecording()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error stopping recording", e)
+        }
     }
 }

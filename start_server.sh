@@ -37,7 +37,11 @@ echo -e "${BLUE}4)${NC} Recording Mode"
 echo "   Saves audio files and transcriptions"
 echo "   medium.en with logging"
 echo ""
-read -p "Enter choice [1-4] (default: 1): " choice
+echo -e "${BLUE}5)${NC} Mobile Storage Mode"
+echo "   Enhanced server with per-session storage"
+echo "   Saves to transcriptions/user1_mobile/"
+echo ""
+read -p "Enter choice [1-5] (default: 1): " choice
 
 # Default to high accuracy if no choice
 if [ -z "$choice" ]; then
@@ -67,6 +71,12 @@ case $choice in
         echo "Audio files will be saved to: ./recordings/"
         echo "Transcriptions will be saved to: ./transcriptions/"
         exec python server_with_recording.py
+        ;;
+    5)
+        echo -e "${GREEN}Starting Mobile Storage Server...${NC}"
+        echo "Session data will be saved to: ./transcriptions/user1_mobile/"
+        echo "Each session gets its own directory with audio and transcriptions"
+        exec python server_with_mobile_storage.py
         ;;
     *)
         echo -e "${YELLOW}Invalid choice. Starting High Accuracy Server...${NC}"

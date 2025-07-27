@@ -25,10 +25,27 @@ class TranscriptionViewModel : ViewModel() {
     private val _transcriptionMessages = MutableSharedFlow<TranscriptionMessage>()
     val transcriptionMessages: SharedFlow<TranscriptionMessage> = _transcriptionMessages.asSharedFlow()
     
-    val connectionState: StateFlow<ConnectionState> = webSocketManager.connectionState
-    val connectionError: StateFlow<String?> = webSocketManager.lastError
+    private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+    
+    private val _connectionError = MutableStateFlow<String?>(null)
+    val connectionError: StateFlow<String?> = _connectionError.asStateFlow()
     
     init {
+        setupWebSocketManager()
+        
+        // Monitor connection state for auto-reconnect in continuous mode
+        connectionState.onEach { state ->
+            if (state == ConnectionState.CONNECTED && 
+                _recordingMode.value == RecordingMode.CONTINUOUS && 
+                _isRecording.value) {
+                // Resume sending audio after reconnection
+                sendQueuedAudio()
+            }
+        }.launchIn(viewModelScope)
+    }
+    
+    private fun setupWebSocketManager() {
         // Set up WebSocket message listener
         webSocketManager.setMessageListener { message ->
             viewModelScope.launch {
@@ -51,14 +68,13 @@ class TranscriptionViewModel : ViewModel() {
             }
         }
         
-        // Monitor connection state for auto-reconnect in continuous mode
-        connectionState.onEach { state ->
-            if (state == ConnectionState.CONNECTED && 
-                _recordingMode.value == RecordingMode.CONTINUOUS && 
-                _isRecording.value) {
-                // Resume sending audio after reconnection
-                sendQueuedAudio()
-            }
+        // Sync WebSocket connection state with our local state
+        webSocketManager.connectionState.onEach { state ->
+            _connectionState.value = state
+        }.launchIn(viewModelScope)
+        
+        webSocketManager.lastError.onEach { error ->
+            _connectionError.value = error
         }.launchIn(viewModelScope)
     }
     
@@ -69,27 +85,8 @@ class TranscriptionViewModel : ViewModel() {
         // Create new instance with updated config
         webSocketManager = WebSocketManager(config)
         
-        // Set up message listener again
-        webSocketManager.setMessageListener { message ->
-            viewModelScope.launch {
-                _transcriptionMessages.emit(message)
-                
-                // Handle VAD mode
-                if (_recordingMode.value == RecordingMode.VOICE_ACTIVITY_DETECTION) {
-                    when (message.type) {
-                        MessageType.RECORDING_START -> {
-                            // Server detected voice activity
-                            _isRecording.value = true
-                        }
-                        MessageType.RECORDING_STOP -> {
-                            // Server detected end of voice activity
-                            _isRecording.value = false
-                        }
-                        else -> {}
-                    }
-                }
-            }
-        }
+        // Set up the new WebSocket manager
+        setupWebSocketManager()
         
         webSocketManager.connect()
     }
